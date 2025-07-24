@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EchoSphere Protocol Architecture</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #64b5f6, #42a5f5, #2196f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(66, 165, 245, 0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            color: #b0bec5;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .architecture-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: auto auto auto;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .cluster {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .cluster:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(100, 181, 246, 0.3);
+        }
+
+        .cluster-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: #64b5f6;
+            position: relative;
+        }
+
+        .cluster-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #64b5f6, transparent);
+        }
+
+        .service {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .service:hover::before {
+            opacity: 1;
+        }
+
+        .service:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(100, 181, 246, 0.3);
+        }
+
+        .service-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .service-tech {
+            font-size: 0.9rem;
+            color: #90a4ae;
+            font-weight: 400;
+        }
+
+        .user-section {
+            grid-column: 2;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .user-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .core-gateway {
+            grid-column: 2;
+            grid-row: 2;
+        }
+
+        .data-hub {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        .ml-services {
+            grid-column: 2;
+            grid-row: 3;
+        }
+
+        .auxiliary {
+            grid-column: 3;
+            grid-row: 3;
+        }
+
+        .connection-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .tech-rust { color: #ce422b; }
+        .tech-python { color: #3776ab; }
+        .tech-js { color: #f7df1e; }
+        .tech-db { color: #336791; }
+        .tech-cache { color: #dc382d; }
+        .tech-queue { color: #ff6600; }
+        .tech-ml { color: #ee4c2c; }
+        .tech-storage { color: #c73e1d; }
+        .tech-crypto { color: #00d4aa; }
+
+        .flow-indicator {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #64b5f6;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+        }
+
+        .connection-arrow {
+            stroke: #64b5f6;
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.6;
+            animation: dash 3s linear infinite;
+        }
+
+        @keyframes dash {
+            0% { stroke-dasharray: 0 10; }
+            50% { stroke-dasharray: 5 5; }
+            100% { stroke-dasharray: 10 0; }
+        }
+
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #64b5f6;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        @media (max-width: 1200px) {
+            .architecture-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+            
+            .user-section,
+            .core-gateway,
+            .data-hub,
+            .ml-services,
+            .auxiliary {
+                grid-column: 1;
+                grid-row: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">EchoSphere Protocol</h1>
+        <p class="subtitle">Secure ML-Oriented Architecture • Enhanced Visualization</p>
+
+        <div class="architecture-grid">
+            <!-- User Section -->
+            <div class="user-section">
+                <div class="user-icon">👤</div>
+                <div class="service-name">Anonymous User Agent</div>
+                <div class="service-tech">External Client Interface</div>
+            </div>
+
+            <!-- Core API & Gateway -->
+            <div class="cluster core-gateway">
+                <h3 class="cluster-title">🚀 Core API & Gateway</h3>
+                
+                <div class="service">
+                    <div class="service-name tech-js">Next.js UI</div>
+                    <div class="service-tech">React • TypeScript • Modern Frontend</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-js">WebSocket Client</div>
+                    <div class="service-tech">Real-time Communication Layer</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-rust">Axum API Server</div>
+                    <div class="service-tech">High-Performance Rust Backend</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-js">WebSocket Server</div>
+                    <div class="service-tech">Bidirectional Event Streaming</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-crypto">JWT + DID Authentication</div>
+                    <div class="service-tech">Decentralized Identity & Security</div>
+                </div>
+            </div>
+
+            <!-- Data Hub -->
+            <div class="cluster data-hub">
+                <h3 class="cluster-title">💾 Data Hub</h3>
+                
+                <div class="service">
+                    <div class="service-name tech-db">PostgreSQL + TimescaleDB</div>
+                    <div class="service-tech">Time-Series & Relational Data</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-cache">Encrypted Redis Cache</div>
+                    <div class="service-tech">High-Speed Memory Store</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-queue">Kafka Event Bus</div>
+                    <div class="service-tech">Distributed Streaming Platform</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-queue">NATS JetStream</div>
+                    <div class="service-tech">Lightweight Message Broker</div>
+                </div>
+            </div>
+
+            <!-- Machine Learning Services -->
+            <div class="cluster ml-services">
+                <h3 class="cluster-title">🧠 ML Services</h3>
+                
+                <div class="service">
+                    <div class="service-name tech-python">FastAPI ML Gateway</div>
+                    <div class="service-tech">Python • Async ML Processing</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-ml">Qdrant Vector Store</div>
+                    <div class="service-tech">High-Performance Vector Database</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-ml">PyTorch Embedding Model</div>
+                    <div class="service-tech">Neural Network • MLflow Tracking</div>
+                </div>
+            </div>
+
+            <!-- Auxiliary Services -->
+            <div class="cluster auxiliary">
+                <h3 class="cluster-title">🔧 Auxiliary Services</h3>
+                
+                <div class="service">
+                    <div class="service-name tech-storage">MinIO Storage</div>
+                    <div class="service-tech">Encrypted Media & File Storage</div>
+                </div>
+
+                <div class="service">
+                    <div class="service-name tech-crypto">Cryptography Suite</div>
+                    <div class="service-tech">Libsodium • age • End-to-End Security</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Lines SVG -->
+        <svg class="connection-lines" viewBox="0 0 1400 800">
+            <!-- User to Core Gateway -->
+            <path class="connection-arrow" d="M 700 120 Q 700 150 700 180" marker-end="url(#arrowhead)"/>
+            
+            <!-- Core Gateway to Data Hub -->
+            <path class="connection-arrow" d="M 600 350 Q 450 400 300 450" marker-end="url(#arrowhead)"/>
+            
+            <!-- Core Gateway to ML Services -->
+            <path class="connection-arrow" d="M 700 380 Q 700 400 700 420" marker-end="url(#arrowhead)"/>
+            
+            <!-- Core Gateway to Auxiliary -->
+            <path class="connection-arrow" d="M 800 350 Q 950 400 1100 450" marker-end="url(#arrowhead)"/>
+            
+            <!-- Data Hub to ML Services -->
+            <path class="connection-arrow" d="M 400 500 Q 550 520 600 540" marker-end="url(#arrowhead)"/>
+            
+            <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#64b5f6"/>
+                </marker>
+            </defs>
+        </svg>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-title">Technology Stack</div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ce422b;"></div>
+                <span>Rust</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #3776ab;"></div>
+                <span>Python</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f7df1e;"></div>
+                <span>JavaScript/TS</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #336791;"></div>
+                <span>Database</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00d4aa;"></div>
+                <span>Security</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive hover effects
+        document.querySelectorAll('.service').forEach(service => {
+            service.addEventListener('mouseenter', () => {
+                service.style.transform = 'translateX(8px) scale(1.02)';
+            });
+            
+            service.addEventListener('mouseleave', () => {
+                service.style.transform = 'translateX(0) scale(1)';
+            });
+        });
+
+        // Add floating animation to clusters
+        document.querySelectorAll('.cluster').forEach((cluster, index) => {
+            cluster.style.animationDelay = `${index * 0.2}s`;
+            cluster.style.animation = 'float 6s ease-in-out infinite';
+        });
+
+        // CSS animation for floating effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
